@@ -46,7 +46,7 @@ app.MapGet("/weatherforecast", () => {
 
 app.MapDefaultEndpoints();
 
-app.MapProductEndpoints();
+ProductEndpoints.MapProductEndpoints(app); //app.MapProductEndpoints();
 
 app.Run();
 
@@ -71,5 +71,6 @@ public static class ServiceRegistration {
     });
     //El mock servicio/repositorio de productos
     services.AddScoped<ProductsRepoService>();
+    services.AddScoped<ProductEndpoints>();
   }
 }

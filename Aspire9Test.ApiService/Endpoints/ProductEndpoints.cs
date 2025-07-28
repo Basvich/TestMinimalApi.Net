@@ -5,17 +5,27 @@ using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
 
 namespace Aspire9Test.ApiService.Endpoints {
-  public static  class ProductEndpoints {
-    public static void MapProductEndpoints(this IEndpointRouteBuilder app) {
+  public  class ProductEndpoints {
+
+    private readonly IServiceProvider requestServices;
+    private IQueryMediator? _readMediator;
+    protected IQueryMediator ReadMediator => _readMediator ??= requestServices.GetRequiredService<IQueryMediator>();
+    private ICommandMediator? _commandMediator;
+    protected ICommandMediator CommandMediator => _commandMediator ??= requestServices.GetRequiredService<ICommandMediator>();
+    public ProductEndpoints(IServiceProvider requestServices) {
+      this.requestServices = requestServices;
+    }
+
+    public static void MapProductEndpoints(IEndpointRouteBuilder app) {
       var productsApi = app.MapGroup("/api/products")
                            .WithTags("Products") // Opcional: para agrupar en Swagger UI
                            .WithOpenApi(); // Aplica a todo el grupo para Swagger
 
-      productsApi.MapGet("/", GetAllProducts);
-      productsApi.MapGet("/{id}", GetProductById);
-      productsApi.MapPost("/", CreateProduct);
-      productsApi.MapPut("/{id}", UpdateProduct);
-      productsApi.MapDelete("/{id}", DeleteProduct);
+      productsApi.MapGet("/", (ProductEndpoints ep)  => ep.GetAllProducts());
+      productsApi.MapGet("/{id}", (ProductEndpoints ep, int id) => ep.GetProductById(id));
+      productsApi.MapPost("/", (ProductEndpoints ep, Product product) => ep.CreateProduct(product));
+      productsApi.MapPut("/{id}", (ProductEndpoints ep, int id, Product product) => ep.UpdateProduct(id, product));
+      productsApi.MapDelete("/{id}", (ProductEndpoints ep, int id) => ep.DeleteProduct(id));
     }
 
     // Handlers de los endpoints (pueden ser métodos estáticos o instanciados vía DI)
@@ -24,8 +34,8 @@ namespace Aspire9Test.ApiService.Endpoints {
     /// </summary>
     /// <param name="mediator">Mediador de consultas.</param>
     /// <returns>Lista de productos.</returns>
-    private static async Task<IResult> GetAllProducts(IQueryMediator mediator) {
-      var products = await mediator.QueryAsync(new GetAll());
+    private async Task<IResult> GetAllProducts() {
+      var products = await ReadMediator.QueryAsync(new GetAll());
       return Results.Ok(products);
     }
 
@@ -35,8 +45,8 @@ namespace Aspire9Test.ApiService.Endpoints {
     /// <param name="id">Identificador del producto.</param>
     /// <param name="mediator">Mediador de consultas.</param>
     /// <returns>El producto si existe, o NotFound si no existe.</returns>
-    private static async Task<IResult> GetProductById(int id, IQueryMediator mediator) {
-      var product = await mediator.QueryAsync(new GetById { Id = id });
+    private async Task<IResult> GetProductById(int id) {
+      var product = await ReadMediator.QueryAsync(new GetById { Id = id });
       return product != null ? Results.Ok(product) : Results.NotFound();
     }
 
@@ -46,8 +56,8 @@ namespace Aspire9Test.ApiService.Endpoints {
     /// <param name="product">Datos del producto a crear.</param>
     /// <param name="mediator">Mediador de comandos.</param>
     /// <returns>El producto creado.</returns>
-    private static async Task<IResult> CreateProduct(Product product, ICommandMediator mediator) {
-      var created = await mediator.SendAsync(new ModifyProducts.AddProduct { Product =product});
+    private async Task<IResult> CreateProduct(Product product) {
+      var created = await CommandMediator.SendAsync(new ModifyProducts.AddProduct { Product =product});
       //Puedo devolver created, pero estoy probando la alternativa de  llamar otra ruta
       return Results.CreatedAtRoute("GetProductById", new { id = product.Id }, product);
     }
@@ -59,10 +69,10 @@ namespace Aspire9Test.ApiService.Endpoints {
     /// <param name="product">Datos actualizados del producto.</param>
     /// <param name="mediator">Mediador de comandos.</param>
     /// <returns>NoContent si se actualizó, NotFound si no existe, BadRequest si el id no coincide.</returns>
-    private static async Task<IResult> UpdateProduct(int id, Product product, ICommandMediator mediator) {
+    private async Task<IResult> UpdateProduct(int id, Product product) {
       if (id != product.Id) return Results.BadRequest();     
 
-      var updated= await mediator.SendAsync(new ModifyProducts.UpdateProduct { Product = product });
+      var updated= await CommandMediator.SendAsync(new ModifyProducts.UpdateProduct { Product = product });
       if (updated == null) return Results.NotFound();
       return Results.NoContent();
     }
@@ -73,8 +83,8 @@ namespace Aspire9Test.ApiService.Endpoints {
     /// <param name="id">Identificador del producto a eliminar.</param>
     /// <param name="mediator">Mediador de comandos.</param>
     /// <returns>NoContent tras eliminar el producto.</returns>
-    private static async Task<IResult> DeleteProduct(int id, ICommandMediator mediator) {
-      await mediator.SendAsync(new ModifyProducts.DeleteProduct {ProductId=id });
+    private async Task<IResult> DeleteProduct(int id) {
+      await CommandMediator.SendAsync(new ModifyProducts.DeleteProduct {ProductId=id });
       return Results.NoContent();
     }
   }
