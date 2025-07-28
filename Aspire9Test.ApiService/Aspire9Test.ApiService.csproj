@@ -7,10 +7,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Aspire9Test.Aplication\Aspire9Test.Application.csproj" />
     <ProjectReference Include="..\Aspire9Test.ServiceDefaults\Aspire9Test.ServiceDefaults.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="LiteBus.Commands" Version="3.0.0" />
+    <PackageReference Include="LiteBus.Commands.Extensions.MicrosoftDependencyInjection" Version="3.0.0" />
+    <PackageReference Include="LiteBus.Messaging.Abstractions" Version="3.0.0" />
+    <PackageReference Include="LiteBus.Queries.Extensions.MicrosoftDependencyInjection" Version="3.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.6.4" />
   </ItemGroup>

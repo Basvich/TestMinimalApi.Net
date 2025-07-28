@@ -8,10 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="LiteBus" Version="3.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Domain\" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.7" />
   </ItemGroup>
 
 </Project>
