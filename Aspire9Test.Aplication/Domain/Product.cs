@@ -9,5 +9,6 @@ namespace Aspire9Test.Application.Domain {
     public int Id { get; set; }
     public required string Name { get; set; }
     public decimal Price { get; set; }
+    public decimal Discount { get; set; } = (decimal)0.2;
   }
 }
