@@ -16,21 +16,10 @@ namespace Aspire9Test.ApiService.Endpoints {
   }
 
 
-  public class ProductEndpoints {
+  public class ProductEndpoints: BaseEnpoints {
 
-    private readonly IServiceProvider requestServices;
-    private IQueryMediator? _readMediator;
-    private IHttpContextAccessor? _httpContextAccessor;
-    private ILogger<ProductEndpoints>? _logger;
-    protected ILogger<ProductEndpoints> Logger => _logger ??= requestServices.GetRequiredService<ILogger<ProductEndpoints>>();
-    protected IQueryMediator ReadMediator => _readMediator ??= requestServices.GetRequiredService<IQueryMediator>();
-    private ICommandMediator? _commandMediator;
-    protected ICommandMediator CommandMediator => _commandMediator ??= requestServices.GetRequiredService<ICommandMediator>();
-
-    protected IHttpContextAccessor HttpContextAccessor =>
-        _httpContextAccessor ??= requestServices.GetRequiredService<IHttpContextAccessor>();
-    public ProductEndpoints(IServiceProvider requestServices) {
-      this.requestServices = requestServices;
+    
+    public ProductEndpoints(IServiceProvider requestServices):base(requestServices) {      
     }
 
     public static void MapProductEndpoints(IEndpointRouteBuilder app) {
@@ -51,10 +40,7 @@ namespace Aspire9Test.ApiService.Endpoints {
     /// </summary>
     /// <param name="ct">Token de cancelación.</param>
     /// <returns>Lista de productos.</returns>
-    private async Task<IResult> GetAllProducts(CancellationToken ct = default) {
-      var products = await GetMediatorResult(new GetAll(), ct);
-      return Results.Ok(products);
-    }
+    private Task<IResult> GetAllProducts(CancellationToken ct = default) => GetMediatorIResult(new GetAll(), new OptMediatr { Aply404OnNull = false }, ct);
 
     /// <summary>
     /// Obtiene un producto por su identificador.
@@ -62,10 +48,7 @@ namespace Aspire9Test.ApiService.Endpoints {
     /// <param name="id">Identificador del producto.</param>
     /// <param name="ct">Token de cancelación.</param>
     /// <returns>El producto si existe, o NotFound si no existe.</returns>
-    private async Task<IResult> GetProductById(int id, CancellationToken ct = default) {
-      // Usando el nuevo método GetMediatorIResult con manejo automático de errores
-      return await GetMediatorIResult(new GetById { Id = id }, new OptMediatr { Aply404OnNull = true }, ct);
-    }
+    private Task<IResult> GetProductById(int id, CancellationToken ct = default) => GetMediatorIResult(new GetById { Id = id }, new OptMediatr { Aply404OnNull = true }, ct);
 
     /// <summary>
     /// Crea un nuevo producto.
@@ -115,133 +98,6 @@ namespace Aspire9Test.ApiService.Endpoints {
     private async Task<IResult> GetProductByIdWithAutoHandling(int id, CancellationToken ct = default) {
       // Usando el nuevo método GetMediatorIResult con manejo automático de errores
       return await GetMediatorIResult(new GetById { Id = id }, new OptMediatr { Aply404OnNull = true }, ct);
-    }
-
-    /// <summary>
-    /// Get direct mediator result, without mapping
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="request"></param>
-    /// <param name="cancellationToken">Token de cancelación para la operación.</param>
-    /// <returns></returns>
-    protected async Task<T> GetMediatorResult<T>(IQuery<T> request, CancellationToken cancellationToken = default) {
-      async Task<T> act() => await ReadMediator.QueryAsync(request, cancellationToken);
-      T? r;
-      try {
-        var reqStr = request.GetType().ToString();
-        Logger.LogDebug("GetMediatorResult() Sending request of type: \"{Req}\"", reqStr);
-        r = await act();
-      } catch (Exception ex) {
-        ex.Data["nfo"] = "Handled";
-        throw;
-      }
-      return r;
-    }
-
-    /// <summary>
-    /// Executes a mediator query and returns an IResult compatible with minimal APIs.
-    /// Handles exceptions and converts them to appropriate HTTP status codes and problem details.
-    /// </summary>
-    /// <typeparam name="T">The type of the query result.</typeparam>
-    /// <param name="request">The query request to execute.</param>
-    /// <param name="optr">Optional configuration for result handling.</param>
-    /// <param name="cancellationToken">Cancellation token for the operation.</param>
-    /// <returns>An IResult representing the HTTP response.</returns>
-    protected async Task<IResult> GetMediatorIResult<T>(IQuery<T> request, OptMediatr? optr = null, CancellationToken cancellationToken = default) {
-      T? r;
-      Exception? exeError = null;
-      try {
-        r = await GetMediatorResult<T>(request, cancellationToken);
-      } catch (Exception ex) {
-        exeError = ex;
-        r = default;
-      }
-
-      var statusCode = ExceptionToStatusCode(exeError);
-      
-      if (exeError == null) {
-        // Handle successful execution
-        if (r == null && optr?.Aply404OnNull == true) {
-          return Results.NotFound();
-        }
-        if (r == null) {
-          return Results.NoContent();
-        }
-        return Results.Ok(r);
-      } else {
-        // Handle exception
-        var respError = ExceptionToProblem(exeError);
-        return Results.Problem(
-          detail: respError?.Detail,
-          statusCode: statusCode,
-          title: respError?.Type,
-          type: respError?.Type,
-          extensions: respError?.Extensions
-        );
-      }
-    }
-
-    /// <summary>
-    /// Legacy method for MVC controllers - returns ActionResult<T>
-    /// </summary>
-    protected async Task<ActionResult<T>> GetMediatorActionResult<T>(IQuery<T> request, OptMediatr? optr = null) {
-      T? r;
-      ObjectResult res;
-      Exception? exeError = null;
-      try {
-        r = await GetMediatorResult<T>(request);
-        if (r == null) return new NoContentResult(); 
-      } catch (Exception ex) {
-        exeError = ex;
-        r = default;
-      }
-      var statusCode = ExceptionToStatusCode(exeError);
-      if (exeError == null) {
-        if (r == null && optr?.Aply404OnNull == true) statusCode = 404;
-        res = new ObjectResult(r) {
-          StatusCode = statusCode
-        };
-      } else {
-        var respError = ExceptionToProblem(exeError);
-        res = new ObjectResult(respError) {
-          StatusCode = statusCode
-        };
-      }
-      return res;
-    }
-
-    protected int ExceptionToStatusCode(Exception? e) {
-      if (e == null) return StatusCodes.Status200OK;
-      var res = e switch {
-        KeyNotFoundException => StatusCodes.Status404NotFound,
-        NotImplementedException => StatusCodes.Status501NotImplemented,
-        InvalidOperationException => StatusCodes.Status400BadRequest,
-        InvalidCredentialException => StatusCodes.Status401Unauthorized,
-        UnauthorizedAccessException => StatusCodes.Status403Forbidden,
-        FluentValidation.ValidationException => StatusCodes.Status400BadRequest,
-        _ => StatusCodes.Status400BadRequest,
-      };
-      return res;
-    }
-
-    protected ProblemDetails? ExceptionToProblem(Exception? e) {
-      if (e == null) return null;
-      ProblemDetails? res = null;
-      if (e is FluentValidation.ValidationException vex) {
-        var r = new ValidationProblemDetails();
-        foreach (var ee in vex.Errors) {
-          r.Errors.TryAdd(ee.PropertyName, [ee.ErrorCode, ee.ErrorMessage]);
-        }
-        r.Status = StatusCodes.Status400BadRequest;
-        res = r;
-        return res;
-      }
-      res = new ProblemDetails {
-        Type = e.GetType().Name,
-        Detail = e.Message,
-        Status = ExceptionToStatusCode(e)
-      };
-      return res;
     }
   }
 }

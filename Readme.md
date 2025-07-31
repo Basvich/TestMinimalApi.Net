@@ -83,3 +83,43 @@ Para un endpoint por ejemplo que devuelve la lista de productos (o uno solo) usa
 
 Que es bastante limpio y sencillo. Pero a poco que nos fijemos, podemos ver que se repite mucho código, y que todavía podemos mejorar eso.
 
+
+En la clase UserProductEndpoints, tenemos unos metodos de lectura, que podrían estar destinados a otros clientes, en los cuales devolvemos algo mucho mas habitual, que es una clase dto.
+
+La simplificación que empieza a ser obvia es usar unas funciones que automáticamente llamen a los comandos, y realizen el mapeo si es necesario.
+
+```csharp
+   protected async Task<T> GetMediatorResult<T>(IQuery<T> request, CancellationToken cancellationToken) {...}
+
+   protected async Task<TMapped> GetMappedMediatorResult<T, TMapped>(IQuery<T> request, CancellationToken cancellationToken) {...}
+```
+
+Estas funciones ya nos dan algo muy similar a lo que queremos, que es un *IResult* . A partir de aquí, se abren mas opciones, siendo una de ellas, usar una función que nos tome el resultado obtenido (incluidas excepciones) y lo ponga conforme la respuesta esperada.
+
+
+
+Así por ejemplo, si usamos un mapeo:
+La función original:
+
+```csharp
+private Task<IResult> GetAllProducts(CancellationToken ct = default) {
+  private async Task<IResult> GetAllProducts(CancellationToken ct = default) {
+  var products = await ReadMediator.QueryAsync(new GetAll(), ct);
+  var productDtos = products.Adapt<List<ProductDto>>();
+  return Results.Ok(productDtos);
+}
+```
+
+
+se transforma en:
+```csharp
+private Task<IResult> GetAllProducts(CancellationToken ct = default) {
+  return GetMappedMediatorIResult<List<Product>, List<ProductDto>>(new GetAll(),null, ct);     
+}
+```
+
+y ya, todavía mas simple:
+```csharp
+ private Task<IResult> GetAllProducts(CancellationToken ct = default) => GetMappedMediatorIResult<List<Product>, List<ProductDto>>(new GetAll(), null, ct);
+ ```
+

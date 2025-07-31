@@ -1,7 +1,10 @@
 ﻿using Aspire9Test.ApiService.Entities;
 using Aspire9Test.Application.Cqs.Products.Read;
+using Aspire9Test.Application.Domain;
 using LiteBus.Queries.Abstractions;
 using Mapster;
+using MapsterMapper;
+using System.Collections.Generic;
 
 namespace Aspire9Test.ApiService.Endpoints {
   /// <summary>
@@ -12,18 +15,8 @@ namespace Aspire9Test.ApiService.Endpoints {
   /// 1. Como parámetro directo (recomendado)
   /// 2. Usando IHttpContextAccessor para casos especiales
   /// </summary>
-  public class UserProductEndpoints {
-    private readonly IServiceProvider requestServices;
-    private IQueryMediator? _readMediator;
-    private ILogger<UserProductEndpoints>? _logger;
-    private IHttpContextAccessor? _httpContextAccessor;
-    
-    protected ILogger<UserProductEndpoints> Logger => _logger ??= requestServices.GetRequiredService<ILogger<UserProductEndpoints>>();
-    protected IQueryMediator ReadMediator => _readMediator ??= requestServices.GetRequiredService<IQueryMediator>();
-    protected IHttpContextAccessor HttpContextAccessor => _httpContextAccessor ??= requestServices.GetRequiredService<IHttpContextAccessor>();
-
-    public UserProductEndpoints(IServiceProvider requestServices) {
-      this.requestServices = requestServices;
+  public class UserProductEndpoints: BaseEnpoints {    
+    public UserProductEndpoints(IServiceProvider requestServices):base(requestServices) {      
     }
 
     public static void MapUserProductEndpoints(IEndpointRouteBuilder app) {
@@ -40,11 +33,7 @@ namespace Aspire9Test.ApiService.Endpoints {
     /// </summary>
     /// <param name="ct">Token de cancelación.</param>
     /// <returns>Lista de productos como ProductDto.</returns>
-    private async Task<IResult> GetAllProducts(CancellationToken ct = default) {
-      var products = await ReadMediator.QueryAsync(new GetAll(), ct);
-      var productDtos = products.Adapt<List<ProductDto>>();
-      return Results.Ok(productDtos);
-    }
+    private Task<IResult> GetAllProducts(CancellationToken ct = default) => GetMappedMediatorIResult<List<Product>, List<ProductDto>>(new GetAll(), null, ct);
 
     /// <summary>
     /// Obtiene un producto por su identificador como ProductDto.
@@ -52,12 +41,7 @@ namespace Aspire9Test.ApiService.Endpoints {
     /// <param name="id">Identificador del producto.</param>
     /// <param name="ct">Token de cancelación.</param>
     /// <returns>El producto como ProductDto si existe, o NotFound si no existe.</returns>
-    private async Task<IResult> GetProductById(int id, CancellationToken ct = default) {
-      var product = await ReadMediator.QueryAsync(new GetById { Id = id }, ct);
-      if (product == null) return Results.NotFound();      
-      var productDto = product.Adapt<ProductDto>();
-      return Results.Ok(productDto);
-    }
+    private Task<IResult> GetProductById(int id, CancellationToken ct = default) => GetMappedMediatorIResult<Product?, ProductDto?>(new GetById { Id = id }, null, ct);
 
     /// <summary>
     /// Obtiene la lista de todos los productos como ProductDto.
@@ -97,5 +81,7 @@ namespace Aspire9Test.ApiService.Endpoints {
       }
       return r;
     }
+
+ 
   }
 }
