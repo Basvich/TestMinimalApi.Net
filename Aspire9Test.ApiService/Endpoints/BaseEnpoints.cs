@@ -31,27 +31,27 @@ namespace Aspire9Test.ApiService.Endpoints {
     /// <param name="request"></param>
     /// <param name="cancellationToken">Token de cancelación para la operación.</param>
     /// <returns></returns>
-    protected async Task<T> GetMediatorResult<T>(IQuery<T> request, CancellationToken cancellationToken) {
-      async Task<T> act() => await ReadMediator.QueryAsync(request, cancellationToken);
-      T? r;
-      try {
-        var reqStr = request.GetType().ToString();
-        Logger.LogDebug("GetMediatorResult() Sending request of type: \"{Req}\"", reqStr);
-        r = await act();
-      } catch (Exception ex) {
-        ex.Data["nfo"] = "Handled";
-        throw;
-      }
-      return r;
+    protected Task<T> GetMediatorResult<T>(IQuery<T> request, CancellationToken cancellationToken) {
+      return GetMediatorResultCore(() => ReadMediator.QueryAsync(request, cancellationToken), request.GetType());
     }
 
-    protected async Task<T> GetMediatorResult<T>(ICommand<T> request, CancellationToken cancellationToken) {
-      async Task<T> act() => await CommandMediator.SendAsync(request, cancellationToken);
+    protected Task<T> GetMediatorResult<T>(ICommand<T> request, CancellationToken cancellationToken) {
+      return GetMediatorResultCore(() => CommandMediator.SendAsync(request, cancellationToken), request.GetType());
+    }
+
+    /// <summary>
+    /// Core implementation for GetMediatorResult methods to avoid code duplication.
+    /// </summary>
+    /// <typeparam name="T">The type of the result.</typeparam>
+    /// <param name="mediatorOperation">The mediator operation to execute.</param>
+    /// <param name="requestType">The type of the request for logging purposes.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    private async Task<T> GetMediatorResultCore<T>(Func<Task<T>> mediatorOperation, Type requestType) {
       T? r;
       try {
-        var reqStr = request.GetType().ToString();
+        var reqStr = requestType.ToString();
         Logger.LogDebug("GetMediatorResult() Sending request of type: \"{Req}\"", reqStr);
-        r = await act();
+        r = await mediatorOperation();
       } catch (Exception ex) {
         ex.Data["nfo"] = "Handled";
         throw;
@@ -68,14 +68,23 @@ namespace Aspire9Test.ApiService.Endpoints {
     /// <param name="request">The query to be executed by the mediator.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the mapped result of type
     /// <typeparamref name="TMapped"/>.</returns>
-    protected async Task<TMapped> GetMappedMediatorResult<T, TMapped>(IQuery<T> request, CancellationToken cancellationToken) {
-      T r1 = await GetMediatorResult(request, cancellationToken);
-      var res=r1.Adapt<TMapped>();      
-      return res;
+    protected Task<TMapped> GetMappedMediatorResult<T, TMapped>(IQuery<T> request, CancellationToken cancellationToken) {
+      return GetMappedMediatorResultCore<T, TMapped>(() => GetMediatorResult(request, cancellationToken));
     }
 
-    protected async Task<TMapped> GetMappedMediatorResult<T, TMapped>(ICommand<T> request, CancellationToken cancellationToken) {
-      T r1 = await GetMediatorResult(request, cancellationToken);
+    protected Task<TMapped> GetMappedMediatorResult<T, TMapped>(ICommand<T> request, CancellationToken cancellationToken) {
+      return GetMappedMediatorResultCore<T, TMapped>(() => GetMediatorResult(request, cancellationToken));
+    }
+
+    /// <summary>
+    /// Core implementation for GetMappedMediatorResult methods to avoid code duplication.
+    /// </summary>
+    /// <typeparam name="T">The type of the result returned by the mediator.</typeparam>
+    /// <typeparam name="TMapped">The type to which the mediator result will be mapped.</typeparam>
+    /// <param name="mediatorOperation">The mediator operation to execute.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the mapped result.</returns>
+    private async Task<TMapped> GetMappedMediatorResultCore<T, TMapped>(Func<Task<T>> mediatorOperation) {
+      T r1 = await mediatorOperation();
       var res = r1.Adapt<TMapped>();
       return res;
     }
@@ -89,45 +98,27 @@ namespace Aspire9Test.ApiService.Endpoints {
     /// <param name="optr">Optional configuration for result handling.</param>
     /// <param name="cancellationToken">Cancellation token for the operation.</param>
     /// <returns>An IResult representing the HTTP response.</returns>
-    protected async Task<IResult> GetMediatorIResult<T>(IQuery<T> request, OptMediatr? optr = null, CancellationToken cancellationToken = default) {
-      T? r;
-      Exception? exeError = null;
-      try {
-        r = await GetMediatorResult<T>(request, cancellationToken);
-      } catch (Exception ex) {
-        exeError = ex;
-        r = default;
-      }
-
-      var statusCode = ExceptionToStatusCode(exeError);
-
-      if (exeError == null) {
-        // Handle successful execution
-        if (r == null && optr?.Aply404OnNull == true) {
-          return Results.NotFound();
-        }
-        if (r == null) {
-          return Results.NoContent();
-        }
-        return Results.Ok(r);
-      } else {
-        // Handle exception
-        var respError = ExceptionToProblem(exeError);
-        return Results.Problem(
-          detail: respError?.Detail,
-          statusCode: statusCode,
-          title: respError?.Type,
-          type: respError?.Type,
-          extensions: respError?.Extensions
-        );
-      }
+    protected Task<IResult> GetMediatorIResult<T>(IQuery<T> request, OptMediatr? optr = null, CancellationToken cancellationToken = default) {
+      return GetMediatorIResultInternal(() => GetMediatorResult(request, cancellationToken), optr);
     }
 
-    protected async Task<IResult> GetMediatorIResult<T>(ICommand<T> request, OptMediatr? optr = null, CancellationToken cancellationToken = default) {
+    protected Task<IResult> GetMediatorIResult<T>(ICommand<T> request, OptMediatr? optr = null, CancellationToken cancellationToken = default) {
+      return GetMediatorIResultInternal(() => GetMediatorResult(request, cancellationToken), optr);
+    }
+
+    /// <summary>
+    /// Common implementation for GetMediatorIResult methods to avoid code duplication.
+    /// Executes the provided mediator operation and handles exceptions and result processing.
+    /// </summary>
+    /// <typeparam name="T">The type of the result.</typeparam>
+    /// <param name="mediatorOperation">The mediator operation to execute.</param>
+    /// <param name="optr">Optional configuration for result handling.</param>
+    /// <returns>An IResult representing the HTTP response.</returns>
+    private async Task<IResult> GetMediatorIResultInternal<T>(Func<Task<T>> mediatorOperation, OptMediatr? optr = null) {
       T? r;
       Exception? exeError = null;
       try {
-        r = await GetMediatorResult<T>(request, cancellationToken);
+        r = await mediatorOperation();
       } catch (Exception ex) {
         exeError = ex;
         r = default;
