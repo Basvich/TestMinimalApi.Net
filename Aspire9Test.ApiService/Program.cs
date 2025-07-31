@@ -1,4 +1,5 @@
 using Aspire9Test.ApiService.Endpoints;
+using Aspire9Test.ApiService.Infraestructure;
 using Aspire9Test.Application.Cqs;
 using Aspire9Test.Application.Services;
 using LiteBus.Commands.Extensions.MicrosoftDependencyInjection;
@@ -46,7 +47,8 @@ app.MapGet("/weatherforecast", () => {
 
 app.MapDefaultEndpoints();
 
-ProductEndpoints.MapProductEndpoints(app); //app.MapProductEndpoints();
+ProductEndpoints.MapProductEndpoints(app);
+UserProductEndpoints.MapUserProductEndpoints(app);
 
 app.Run();
 
@@ -72,5 +74,7 @@ public static class ServiceRegistration {
     //El mock servicio/repositorio de productos
     services.AddScoped<ProductsRepoService>();
     services.AddScoped<ProductEndpoints>();
+    services.AddScoped<UserProductEndpoints>();
+    services.RegisterMapsterConfiguration();
   }
 }

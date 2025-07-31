@@ -17,7 +17,7 @@ namespace Aspire9Test.ApiService.Endpoints {
     }
 
     public static void MapProductEndpoints(IEndpointRouteBuilder app) {
-      var productsApi = app.MapGroup("/api/products")
+      var productsApi = app.MapGroup("/api/admin/products")
                            .WithTags("Products") // Opcional: para agrupar en Swagger UI
                            .WithOpenApi(); // Aplica a todo el grupo para Swagger
 
