@@ -71,6 +71,10 @@ public static class ServiceRegistration {
         module.RegisterFromAssembly(typeof(CqsHandlerBase).Assembly);
       });
     });
+    
+    // Registrar IHttpContextAccessor (necesario para acceder a HttpContext en minimal APIs)
+    services.AddHttpContextAccessor();
+    
     //El mock servicio/repositorio de productos
     services.AddScoped<ProductsRepoService>();
     services.AddScoped<ProductEndpoints>();

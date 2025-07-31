@@ -42,3 +42,44 @@ Tenemos una serie de puntos claves:
 ### Servicios
 
 Esto suele ser una aplicación o varias que agrupan distintos servicios, como por ejemplo la persistencia de los datos, la conexión a otros servicioes externos, etc. 
+
+
+## Mejoras y simplificaciones
+
+### Patron CQRS enlazado a los maps de endpoints.
+
+Tenemos varias opciones para el agrupamiento de los endpoints, y jugar también con la inyección de dependencias. Una de ellas es usar un patron como:
+
+```csharp
+ public  class ProductEndpoints {
+
+    private readonly IServiceProvider requestServices;
+    private IQueryMediator? _readMediator;
+    protected IQueryMediator ReadMediator => _readMediator ??= requestServices.GetRequiredService<IQueryMediator>();
+    private ICommandMediator? _commandMediator;
+    protected ICommandMediator CommandMediator => _commandMediator ??= requestServices.GetRequiredService<ICommandMediator>();
+    public ProductEndpoints(IServiceProvider requestServices) {
+      this.requestServices = requestServices;
+    }
+ }
+```
+
+Básicamente uso la inyeccion de dependencias solo de las necesarias en el momento. Resulta en códig bastante más limpio y eficiente, que tener constructores con muchos parámetros de cosas que igual ni se usan en esas llamadas.
+Sin embargo, puede empeorar un poco el test, ya que básicamente hay que moquear el requestServices (usar fictures o similar).
+
+Para un endpoint por ejemplo que devuelve la lista de productos (o uno solo) usando el patron mediatos, quedaría:
+
+```csharp 
+    private async Task<IResult> GetAllProducts() {
+      var products = await ReadMediator.QueryAsync(new GetAll());
+      return Results.Ok(products);
+    }
+
+    private async Task<IResult> GetProductById(int id) {
+      var product = await ReadMediator.QueryAsync(new GetById { Id = id });
+      return product != null ? Results.Ok(product) : Results.NotFound();
+    }
+```
+
+Que es bastante limpio y sencillo. Pero a poco que nos fijemos, podemos ver que se repite mucho código, y que todavía podemos mejorar eso.
+
