@@ -3,8 +3,12 @@
 
 El objetivo de este repositorio, es simplemente comprobar como queda el funcionamiento y la estructura de un proyecto que usa una arquitectura de tipo Minimal API, unido al patron CQS, que siempre da un resultado muy limpio y sencillo de entender.
 
-Anteriormente se usaba este patron usando la librería MediatR, pero debido a cambios en su licencia hubo que probar una alternativa, y en este caso es la librería **LiteBus**.
+Anteriormente se usaba este patron usando la librería MediatR, pero debido a cambios en su licencia hubo que probar una alternativa, y en este caso es la librería [LiteBus](https://github.com/litenova/LiteBus).
 
+Acaba siendo casi obligatorio necesitar usar clases dto, diferentes a las del dominio, por motivos variados. Con lo que es necesario usar cosas que nos faciliten esa especie de "burocracia obligatoria" para transformar de uinas a otras. 
+Habitualmente se usa AutoMapper. Como tambíen modifico su licencia de uso, se buscó una alternativa, que en este caso se ha optado por la librería [Mapster](https://github.com/MapsterMapper/Mapster), (otras alternativas son igualmente válidas).
+
+Para no escuchar de nuevo la importancia de *Separacion de responsabilidades*, se puede saltar directamente a la sección de [Mejoras y simplificaciones](#mejoras-y-simplificaciones) para ver como se puede simplificar el código de los endpoints, y como se puede usar la inyección de dependencias de una forma más limpia. 
 
 ## Separacion de responsabilidades
 
@@ -33,7 +37,7 @@ Tenemos una serie de puntos claves:
 - Pueden existir en esta capa, muchas de las clases *dto*, por ejemplo en su propio domain, ya que suelen ser cosas particulares del interface con el usuario, y el resto de la aplicación no necesita conocerlas.
 - Tambien tendríamos en esta capa otros aspectos como la logíca de las respuestas, rest (o sea como normalizamos todo, indicamos errores, etc). Lo normal sería que la capa de la aplicación por ejemplo genera excepciones, y la capa de presentación las maneja, devolviendo el error correspondiente al usuario.
 - De la capa de la aplicación, muchas veces tenemos clases que no son las que se usan para interactuar con el usuario, con lo que se acaban usando otras clases *dto*. Para convertir estas clases en las otras, se usan mapeadores, siendo el más clasico el auto-mapper. 
-  - En muchas de las implementaciones de esta capa, se vé como se acaba repitiendo mucho código para añadir instrucciónes para el mapeo. Todo esto puede simplificarse enormemente con el uso de genericos, que se encargan de buscar y llamar los mapeos necesarios, sin necesidad de repetir código. En este proyecto se usa la librería **Mapster**, que permite hacer esto de una forma muy sencilla y limpia.
+  - En muchas de las implementaciones de esta capa, se vé como se acaba repitiendo mucho código para añadir instrucciónes para el mapeo. Todo esto puede simplificarse enormemente con el uso de genericos, que se encargan de buscar y llamar los mapeos necesarios, sin necesidad de repetir código. En este proyecto se usa la librería  [Mapster](https://github.com/MapsterMapper/Mapster), que permite hacer esto de una forma muy sencilla y limpia.
 - Comparado con implementaciones clasicas de esta capa, resulta en la implementación del endpoint, realmente simple, siendo muchas veces una única línea de código, no necesintando el uso de otros servicios propios de la aplicación en si.
 - En esta capa, si que hay que añadir la lógica de seguridad, como la autenticación y autorización, el manejo del JWT, etc. 
   - 😕 Esto no quita que en la parte de la aplicación en si, no se vuelvan a comprobar de nuevo las politicas de seguridad. Es cierto que en la práctica, es probable que el mismo código de seguridad se acabe ejecutando varias veces.

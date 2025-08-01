@@ -58,7 +58,7 @@ namespace Aspire9Test.ApiService.Endpoints {
     /// <returns>El producto creado.</returns>
     private async Task<IResult> CreateProduct(Product product, CancellationToken ct = default) {
       var created = await CommandMediator.SendAsync(new ModifyProducts.AddProduct { Product = product }, ct);
-      //Puedo devolver created, pero estoy probando la alternativa de  llamar otra ruta
+      //Puedo devolver created directamente, pero estoy probando la alternativa de  llamar otra ruta
       return Results.CreatedAtRoute("GetProductById", new { id = product.Id }, product);
     }
 
@@ -71,8 +71,7 @@ namespace Aspire9Test.ApiService.Endpoints {
     /// <returns>NoContent si se actualizó, NotFound si no existe, BadRequest si el id no coincide.</returns>
     private async Task<IResult> UpdateProduct(int id, Product product, CancellationToken ct = default) {
       if (id != product.Id) return Results.BadRequest();
-
-      var updated = await CommandMediator.SendAsync(new ModifyProducts.UpdateProduct { Product = product }, ct);
+      var updated = await GetMediatorResult(new ModifyProducts.UpdateProduct { Product = product },  ct);      
       if (updated == null) return Results.NotFound();
       return Results.NoContent();
     }
@@ -84,8 +83,9 @@ namespace Aspire9Test.ApiService.Endpoints {
     /// <param name="ct">Token de cancelación.</param>
     /// <returns>NoContent tras eliminar el producto.</returns>
     private async Task<IResult> DeleteProduct(int id, CancellationToken ct = default) {
-      await CommandMediator.SendAsync(new ModifyProducts.DeleteProduct { ProductId = id }, ct);
-      return Results.NoContent();
+      var r=await GetMediatorResult(new ModifyProducts.DeleteProduct { ProductId = id }, ct);
+      if(r) return Results.NoContent();
+      return Results.NotFound();
     }
 
     /// <summary>
