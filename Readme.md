@@ -68,7 +68,7 @@ Tenemos varias opciones para el agrupamiento de los endpoints, y jugar también 
  }
 ```
 
-Básicamente uso la inyeccion de dependencias solo de las necesarias en el momento. Resulta en códig bastante más limpio y eficiente, que tener constructores con muchos parámetros de cosas que igual ni se usan en esas llamadas.
+Básicamente uso la inyeccion de dependencias solo de las necesarias en el momento. Resulta en códig0 bastante más limpio y eficiente, que tener constructores con muchos parámetros de cosas que igual ni se usan en esas llamadas.
 Sin embargo, puede empeorar un poco el test, ya que básicamente hay que moquear el requestServices (usar fictures o similar).
 
 Para un endpoint por ejemplo que devuelve la lista de productos (o uno solo) usando el patron mediatos, quedaría:
@@ -126,4 +126,8 @@ y ya, todavía mas simple:
 ```csharp
  private Task<IResult> GetAllProducts(CancellationToken ct = default) => GetMappedMediatorIResult<List<Product>, List<ProductDto>>(new GetAll(), null, ct);
  ```
+
+
+ Si las funciones helper, de llamadas a cqrs como `GetMappedMediatorResult()`, se pueden implementar en una clase base, de forma que ya tenemos esa funcionalidad para todo el proyecto.
+
 
