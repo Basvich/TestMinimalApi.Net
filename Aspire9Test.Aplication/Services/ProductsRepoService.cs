@@ -30,9 +30,9 @@ namespace Aspire9Test.Application.Services {
       return Task.FromResult(existing);
     }
 
-    public Task DeleteProduct(int id) {
-      _products.RemoveAll(p => p.Id == id);
-      return Task.CompletedTask;
+    public Task<bool> DeleteProduct(int id) {
+      var c=_products.RemoveAll(p => p.Id == id);
+      return Task.FromResult(c > 0);
     }
   }
 }

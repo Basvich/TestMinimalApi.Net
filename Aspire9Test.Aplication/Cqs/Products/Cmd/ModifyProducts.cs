@@ -16,13 +16,13 @@ namespace Aspire9Test.Application.Cqs.Products.Cmd {
       public required Product Product { get; set; }
     }
 
-    public class DeleteProduct : ICommand {
+    public class DeleteProduct : ICommand<bool> {
       public required int ProductId { get; set; }
     }
 
 
     public class ModifyProductsHandler(IServiceProvider RequestServices) : ProductsHandlerBase(RequestServices),
-      ICommandHandler<AddProduct, Product>, ICommandHandler<UpdateProduct, Product?>, ICommandHandler<DeleteProduct> {
+      ICommandHandler<AddProduct, Product>, ICommandHandler<UpdateProduct, Product?>, ICommandHandler<DeleteProduct,bool> {
       public object Handle(object message) {
         throw new NotImplementedException();
       }
@@ -45,14 +45,14 @@ namespace Aspire9Test.Application.Cqs.Products.Cmd {
       public async Task<Product?> HandleAsync(UpdateProduct message, CancellationToken cancellationToken = default) {
         ArgumentNullException.ThrowIfNull(message);
         //Actualizar un producto existente, llamando a la funcion del servicio
-        var res= await ProductsRepoService.UpdateProduct(message.Product);
+        var res = await ProductsRepoService.UpdateProduct(message.Product);
         return res;
       }
 
-      public Task HandleAsync(DeleteProduct message, CancellationToken cancellationToken = default) {
-        var res= ProductsRepoService.DeleteProduct(message.ProductId);
+      public Task<bool> HandleAsync(DeleteProduct message, CancellationToken cancellationToken = default) {
+        var res = ProductsRepoService.DeleteProduct(message.ProductId);
         return res;
       }
     }
-}
+  }
 }
