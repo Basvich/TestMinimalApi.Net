@@ -1,34 +1,39 @@
-﻿using Aspire9Test.ApiService.Entities;
-using Aspire9Test.Application.Domain;
-using LiteBus.Commands.Abstractions;
+﻿using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
 using Mapster;
-using MapsterMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Authentication;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace Aspire9Test.ApiService.Endpoints {
+namespace Bag.Utils.Endpoints {
 
   public class OptMediatr {
     /// <summary>return status 404 if result is null (not 204) </summary>
     public bool Aply404OnNull = true;
   }
-
-  public class BaseEnpoints {
+  public class CqrsMappeHelperr {
     private readonly IServiceProvider requestServices;
     private IQueryMediator? _readMediator;
     private IHttpContextAccessor? _httpContextAccessor;
-    private ILogger<BaseEnpoints>? _logger;
-    protected ILogger<BaseEnpoints> Logger => _logger ??= requestServices.GetRequiredService<ILogger<BaseEnpoints>>();
+    private ILogger<CqrsMappeHelperr>? _logger;
+    protected ILogger<CqrsMappeHelperr> Logger => _logger ??= requestServices.GetRequiredService<ILogger<CqrsMappeHelperr>>();
     protected IQueryMediator ReadMediator => _readMediator ??= requestServices.GetRequiredService<IQueryMediator>();
     private ICommandMediator? _commandMediator;
     protected ICommandMediator CommandMediator => _commandMediator ??= requestServices.GetRequiredService<ICommandMediator>();
 
     protected IHttpContextAccessor HttpContextAccessor =>
         _httpContextAccessor ??= requestServices.GetRequiredService<IHttpContextAccessor>();
-    public BaseEnpoints(IServiceProvider requestServices) {
+    public CqrsMappeHelperr(IServiceProvider requestServices) {
       this.requestServices = requestServices;
     }
+
 
     /// <summary>
     /// Get direct mediator result, without mapping
@@ -162,7 +167,7 @@ namespace Aspire9Test.ApiService.Endpoints {
     /// <param name="request"></param>
     /// <param name="optr"></param>
     /// <returns></returns>
-    protected async Task<IResult> GetMappedMediatorIResult<T, TR>(IQuery<T> request, OptMediatr? optr = null, CancellationToken cancellationToken = default) {      
+    protected async Task<IResult> GetMappedMediatorIResult<T, TR>(IQuery<T> request, OptMediatr? optr = null, CancellationToken cancellationToken = default) {
       Exception? exeError = null;
       TR? r;
       try {
@@ -175,7 +180,7 @@ namespace Aspire9Test.ApiService.Endpoints {
       if (exeError == null) {
         if (r == null && optr?.Aply404OnNull == true) statusCode = 404;
         if (statusCode == StatusCodes.Status200OK) return Results.Ok(r);
-        return Results.StatusCode(statusCode);        
+        return Results.StatusCode(statusCode);
       } else {
         var respError = ExceptionToProblem(exeError);
         return Results.Problem(
@@ -185,38 +190,10 @@ namespace Aspire9Test.ApiService.Endpoints {
           type: respError?.Type,
           extensions: respError?.Extensions
         );
-      }      
+      }
     }
 
-    /// <summary>
-    /// Legacy method for MVC controllers - returns ActionResult<T>
-    /// </summary>
-    protected async Task<ActionResult<T>> GetMediatorActionResult<T>(IQuery<T> request, OptMediatr? optr = null, CancellationToken cancellationToken= default) {
-      T? r;
-      ObjectResult res;
-      Exception? exeError = null;
-      try {
-        r = await GetMediatorResult<T>(request, cancellationToken);
-        if (r == null) return new NoContentResult();
-      } catch (Exception ex) {
-        exeError = ex;
-        r = default;
-      }
-      var statusCode = ExceptionToStatusCode(exeError);
-      if (exeError == null) {
-        if (r == null && optr?.Aply404OnNull == true) statusCode = 404;
-        res = new ObjectResult(r) {
-          StatusCode = statusCode
-        };
-      } else {
-        var respError = ExceptionToProblem(exeError);
-        res = new ObjectResult(respError) {
-          StatusCode = statusCode
-        };
-      }
-      return res;
-    }
-
+  
     protected int ExceptionToStatusCode(Exception? e) {
       if (e == null) return StatusCodes.Status200OK;
       var res = e switch {

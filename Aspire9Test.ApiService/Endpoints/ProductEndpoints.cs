@@ -10,10 +10,7 @@ using System.Security.Authentication;
 
 namespace Aspire9Test.ApiService.Endpoints {
 
-  public class OptMediatr {
-    /// <summary>return status 404 if result is null (not 204) </summary>
-    public bool Aply404OnNull = true;
-  }
+
 
 
   public class ProductEndpoints: BaseEnpoints {
