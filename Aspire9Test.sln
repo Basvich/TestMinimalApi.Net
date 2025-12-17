@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36301.6
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11217.181 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspire9Test.AppHost", "Aspire9Test.AppHost\Aspire9Test.AppHost.csproj", "{BC1B59E6-9D1F-4AD0-BA37-6E99DFE09671}"
 EndProject
@@ -19,8 +19,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Elementos de la solución",
 	ProjectSection(SolutionItems) = preProject
 		Readme.md = Readme.md
 	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bag.Utils", "Bag.Utils\Bag.Utils.csproj", "{0940FA01-D2BC-4AB1-954F-492F52909E4B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -52,10 +50,6 @@ Global
 		{E9DE4AAB-7556-4730-9C00-098098038DC5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E9DE4AAB-7556-4730-9C00-098098038DC5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E9DE4AAB-7556-4730-9C00-098098038DC5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0940FA01-D2BC-4AB1-954F-492F52909E4B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0940FA01-D2BC-4AB1-954F-492F52909E4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0940FA01-D2BC-4AB1-954F-492F52909E4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0940FA01-D2BC-4AB1-954F-492F52909E4B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
