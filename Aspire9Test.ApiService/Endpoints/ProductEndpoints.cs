@@ -66,11 +66,9 @@ namespace Aspire9Test.ApiService.Endpoints {
     /// <param name="product">Datos actualizados del producto.</param>
     /// <param name="ct">Token de cancelación.</param>
     /// <returns>NoContent si se actualizó, NotFound si no existe, BadRequest si el id no coincide.</returns>
-    private async Task<IResult> UpdateProduct(int id, Product product, CancellationToken ct = default) {
-      if (id != product.Id) return Results.BadRequest();
-      var updated = await GetMediatorResult(new ModifyProducts.UpdateProduct { Product = product },  ct);      
-      if (updated == null) return Results.NotFound();
-      return Results.NoContent();
+    private  Task<IResult> UpdateProduct(int id, Product product, CancellationToken ct = default) {
+      if (id != product.Id) return Task.FromResult( Results.BadRequest());
+      return GetMediatorIResult(new ModifyProducts.UpdateProduct { Product = product }, new OptMediatr { Aply404OnNull = true }, ct);      
     }
 
     /// <summary>
@@ -79,11 +77,8 @@ namespace Aspire9Test.ApiService.Endpoints {
     /// <param name="id">Identificador del producto a eliminar.</param>
     /// <param name="ct">Token de cancelación.</param>
     /// <returns>NoContent tras eliminar el producto.</returns>
-    private async Task<IResult> DeleteProduct(int id, CancellationToken ct = default) {
-      var r=await GetMediatorResult(new ModifyProducts.DeleteProduct { ProductId = id }, ct);
-      if(r) return Results.NoContent();
-      return Results.NotFound();
-    }
+    private Task<IResult> DeleteProduct(int id, CancellationToken ct = default)  => GetMediatorIResult(new ModifyProducts.DeleteProduct { ProductId = id },new OptMediatr { Aply404OnNull=true}, ct);
+      
 
     /// <summary>
     /// Ejemplo alternativo de GetProductById usando GetMediatorIResult 
